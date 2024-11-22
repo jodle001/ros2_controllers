@@ -69,6 +69,7 @@ struct AdmittanceState
     mass.setOnes();
     mass_inv.setZero();
     stiffness.setZero();
+    force_setpoint.setZero();
     selected_axes.setZero();
     current_joint_pos = Eigen::VectorXd::Zero(num_joints);
     joint_pos = Eigen::VectorXd::Zero(num_joints);
@@ -85,6 +86,7 @@ struct AdmittanceState
   Eigen::Matrix<double, 6, 1> mass_inv;
   Eigen::Matrix<double, 6, 1> selected_axes;
   Eigen::Matrix<double, 6, 1> stiffness;
+  Eigen::Matrix<double, 6, 1> force_setpoint;
   Eigen::Matrix<double, 6, 1> wrench_base;
   Eigen::Matrix<double, 6, 1> admittance_acceleration;
   Eigen::Matrix<double, 6, 1> admittance_velocity;

@@ -129,6 +129,7 @@ void AdmittanceRule::apply_parameters_update()
   vec_to_eigen(parameters_.gravity_compensation.CoG.pos, cog_pos_);
   vec_to_eigen(parameters_.admittance.mass, admittance_state_.mass);
   vec_to_eigen(parameters_.admittance.stiffness, admittance_state_.stiffness);
+  vec_to_eigen(parameters_.admittance.force_setpoint, admittance_state_.force_setpoint);
   vec_to_eigen(parameters_.admittance.selected_axes, admittance_state_.selected_axes);
 
   for (size_t i = 0; i < NUM_CARTESIAN_DOF; ++i)
@@ -282,8 +283,18 @@ bool AdmittanceRule::calculate_admittance_rule(AdmittanceState & admittance_stat
   F_base.block<3, 1>(3, 0) = rot_base_control * F_control.block<3, 1>(3, 0);
 
   // Compute admittance control law in the base frame: F = M*x_ddot + D*x_dot + K*x
+  // Eigen::Matrix<double, 6, 1> X_ddot =
+  //   admittance_state.mass_inv.cwiseProduct(F_base - D * X_dot - K * X);
+
+  // Zero out non-selected axes for force setpoint
+  admittance_state.force_setpoint = admittance_state.force_setpoint.cwiseProduct(admittance_state.selected_axes);
+  // Subtract force setpoint to adjust the target force
+  Eigen::Matrix<double, 6, 1> adjusted_force = admittance_state.wrench_base - admittance_state.force_setpoint;
+
+  // Compute Cartesian acceleration based on the admittance control law
   Eigen::Matrix<double, 6, 1> X_ddot =
-    admittance_state.mass_inv.cwiseProduct(F_base - D * X_dot - K * X);
+      admittance_state.mass_inv.cwiseProduct(adjusted_force - D * X_dot - K * X);
+
   bool success = kinematics_->convert_cartesian_deltas_to_joint_deltas(
     admittance_state.current_joint_pos, X_ddot, admittance_state.ft_sensor_frame,
     admittance_state.joint_acc);
