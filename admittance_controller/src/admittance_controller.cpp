@@ -413,6 +413,16 @@ controller_interface::return_type AdmittanceController::update_and_write_command
 
   // apply admittance control to reference to determine desired state
   admittance_->update(joint_state_, ft_values_, reference_, period, reference_admittance_);
+  
+//  RCLCPP_ERROR_STREAM(get_node()->get_logger(), "joint state pos: " << joint_state_.positions[0] << ", " << joint_state_.positions[1] << ", " << joint_state_.positions[2] << ", " << joint_state_.positions[3] << ", " << joint_state_.positions[4] << ", " << joint_state_.positions[5]);
+
+//  RCLCPP_ERROR_STREAM(get_node()->get_logger(), "joint state vel: " << joint_state_.velocities[0] << ", " << joint_state_.velocities[1] << ", " << joint_state_.velocities[2] << ", " << joint_state_.velocities[3] << ", " << joint_state_.velocities[4] << ", " << joint_state_.velocities[5]);
+
+//  RCLCPP_ERROR_STREAM(get_node()->get_logger(), "ref admit   pos: " << reference_admittance_.positions[0] << ", " << reference_admittance_.positions[1] << ", " << reference_admittance_.positions[2] << ", " << reference_admittance_.positions[3] << ", " << reference_admittance_.positions[4] << ", " << reference_admittance_.positions[5]);
+
+//  RCLCPP_ERROR_STREAM(get_node()->get_logger(), "ref admit   vel: " << reference_admittance_.velocities[0] << ", " << reference_admittance_.velocities[1] << ", " << reference_admittance_.velocities[2] << ", " << reference_admittance_.velocities[3] << ", " << reference_admittance_.velocities[4] << ", " << reference_admittance_.velocities[5]);
+
+
 
   // write calculated values to joint interfaces
   write_state_to_hardware(reference_admittance_);

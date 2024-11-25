@@ -283,13 +283,13 @@ bool AdmittanceRule::calculate_admittance_rule(AdmittanceState & admittance_stat
   F_base.block<3, 1>(3, 0) = rot_base_control * F_control.block<3, 1>(3, 0);
 
   // Compute admittance control law in the base frame: F = M*x_ddot + D*x_dot + K*x
-  // Eigen::Matrix<double, 6, 1> X_ddot =
-  //   admittance_state.mass_inv.cwiseProduct(F_base - D * X_dot - K * X);
+ //  Eigen::Matrix<double, 6, 1> X_ddot =
+ //    admittance_state.mass_inv.cwiseProduct(F_base - D * X_dot - K * X);
 
   // Zero out non-selected axes for force setpoint
   admittance_state.force_setpoint = admittance_state.force_setpoint.cwiseProduct(admittance_state.selected_axes);
   // Subtract force setpoint to adjust the target force
-  Eigen::Matrix<double, 6, 1> adjusted_force = admittance_state.wrench_base - admittance_state.force_setpoint;
+  Eigen::Matrix<double, 6, 1> adjusted_force = F_base - admittance_state.force_setpoint;
 
   // Compute Cartesian acceleration based on the admittance control law
   Eigen::Matrix<double, 6, 1> X_ddot =
