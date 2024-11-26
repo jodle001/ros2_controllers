@@ -337,9 +337,12 @@ void AdmittanceRule::process_wrench_measurements(
   // transform to world frame
   Eigen::Matrix<double, 3, 2> new_wrench_base = sensor_world_rot * new_wrench;
 
+  // Transform end-effector weight to world frame
+  Eigen::Vector3d weight_world = sensor_world_rot * end_effector_weight_;
+
   // apply gravity compensation
-  new_wrench_base(2, 0) -= end_effector_weight_[2];
-  new_wrench_base.block<3, 1>(0, 1) -= (cog_world_rot * cog_pos_).cross(end_effector_weight_);
+  new_wrench_base(2, 0) -= weight_world[2];
+  new_wrench_base.block<3, 1>(0, 1) -= (cog_world_rot * cog_pos_).cross(weight_world);
 
   // apply smoothing filter
   for (size_t i = 0; i < 6; ++i)
