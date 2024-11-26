@@ -216,6 +216,9 @@ protected:
 
   // ROS
   control_msgs::msg::AdmittanceControllerState state_message_;
+  std::shared_ptr<rclcpp::Node> node_;
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
 };
 
 }  // namespace admittance_controller
