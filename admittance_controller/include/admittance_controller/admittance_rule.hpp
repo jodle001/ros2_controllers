@@ -106,6 +106,7 @@ public:
     parameters_ = parameter_handler_->get_params();
     num_joints_ = parameters_.joints.size();
     admittance_state_ = AdmittanceState(num_joints_);
+    bias_.setZero();
     reset(num_joints_);
   }
 
@@ -211,14 +212,16 @@ protected:
   // position of center of gravity in cog_frame
   Eigen::Vector3d cog_pos_;
 
+  Eigen::Matrix<double, 6, 1> bias_;
+
   // force applied to sensor due to weight of end effector
   Eigen::Vector3d end_effector_weight_;
 
   // ROS
   control_msgs::msg::AdmittanceControllerState state_message_;
-  std::shared_ptr<rclcpp::Node> node_;
-  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
-    std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
+
+  std::unique_ptr<rclcpp::Node> node_;
+  int throttle = 10000;
 };
 
 }  // namespace admittance_controller

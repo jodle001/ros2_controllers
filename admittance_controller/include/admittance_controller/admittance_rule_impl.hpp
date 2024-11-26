@@ -35,10 +35,7 @@ constexpr auto NUM_CARTESIAN_DOF = 6;  // (3 translation + 3 rotation)
 controller_interface::return_type AdmittanceRule::configure(
   const std::shared_ptr<rclcpp_lifecycle::LifecycleNode> & node, const size_t num_joints)
 {
-  node_ = std::make_shared<rclcpp::Node>("admittance_rule_impl_node");
-  // initialize tf buffer and listener
-  tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
-  tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+  node_ = std::make_unique<rclcpp::Node>("admittance_rule_node");
   num_joints_ = num_joints;
 
   // initialize memory and values to zero  (non-realtime function)
@@ -131,6 +128,7 @@ void AdmittanceRule::apply_parameters_update()
   // update param values
   end_effector_weight_[2] = -parameters_.gravity_compensation.CoG.force;
   vec_to_eigen(parameters_.gravity_compensation.CoG.pos, cog_pos_);
+  vec_to_eigen(parameters_.gravity_compensation.CoG.bias, bias_);
   vec_to_eigen(parameters_.admittance.mass, admittance_state_.mass);
   vec_to_eigen(parameters_.admittance.stiffness, admittance_state_.stiffness);
   vec_to_eigen(parameters_.admittance.force_setpoint, admittance_state_.force_setpoint);
@@ -277,6 +275,7 @@ bool AdmittanceRule::calculate_admittance_rule(AdmittanceState & admittance_stat
 
   // external force expressed in the base frame
   auto F_base = admittance_state.wrench_base;
+  // auto F_base = wrench_world_;
 
   // zero out any forces in the control frame
   Eigen::Matrix<double, 6, 1> F_control;
@@ -294,6 +293,10 @@ bool AdmittanceRule::calculate_admittance_rule(AdmittanceState & admittance_stat
   admittance_state.force_setpoint = admittance_state.force_setpoint.cwiseProduct(admittance_state.selected_axes);
   // Subtract force setpoint to adjust the target force
   Eigen::Matrix<double, 6, 1> adjusted_force = F_base - admittance_state.force_setpoint;
+
+  RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, "F_base:\n" << F_base);
+  RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, "force setpoint:\n" << admittance_state.force_setpoint);
+  RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, "adjusted force:\n" << adjusted_force);
 
   // Compute Cartesian acceleration based on the admittance control law
   Eigen::Matrix<double, 6, 1> X_ddot =
@@ -330,24 +333,6 @@ void AdmittanceRule::process_wrench_measurements(
   const Eigen::Matrix<double, 3, 3> & sensor_world_rot,
   const Eigen::Matrix<double, 3, 3> & cog_world_rot)
 {
-  int throttle = 10000;
-  geometry_msgs::msg::TransformStamped grav_to_ft_tf2;
-  geometry_msgs::msg::WrenchStamped ee_weight_wrench;
-  while (grav_to_ft_tf2.header.frame_id == "" && rclcpp::ok()) {
-    try {
-      grav_to_ft_tf2 = tf_buffer_->lookupTransform(
-          "tool0", "base_link", tf2::TimePointZero);
-    }
-    catch (tf2::TransformException &ex) {
-      RCLCPP_ERROR(node_->get_logger(), "%s", ex.what());
-      RCLCPP_ERROR(node_->get_logger(),
-                    "Waiting for the transform from gravity frame to the force/torque frame to be published.");
-
-      rclcpp::sleep_for(std::chrono::milliseconds(10));
-      continue; 
-    }
-  }
-
   Eigen::Matrix<double, 3, 2, Eigen::ColMajor> new_wrench;
   new_wrench(0, 0) = measured_wrench.force.x;
   new_wrench(1, 0) = measured_wrench.force.y;
@@ -357,82 +342,39 @@ void AdmittanceRule::process_wrench_measurements(
   new_wrench(2, 1) = measured_wrench.torque.z;
 
   RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, 
-  "new_wrench before:\n" << new_wrench);
-
-  // Create a Vector3Stamped message
-  geometry_msgs::msg::Vector3Stamped tmp_vec;
-
-  // Assign Eigen vector values to the Vector3Stamped message
-  tmp_vec.vector.x = end_effector_weight_[0];
-  tmp_vec.vector.y = end_effector_weight_[1];
-  tmp_vec.vector.z = end_effector_weight_[2];
-
-  geometry_msgs::msg::Vector3Stamped out;
-  tf2::doTransform(tmp_vec, out, grav_to_ft_tf2);
-
-  // Eigen::Matrix<double, 3, 1> weight_world = sensor_world_rot * end_effector_weight_;
-
-  // apply gravity compensation
-  // new_wrench.col(0) -= weight_world;
-
-  // new_wrench.block<3, 1>(0, 1) -= (cog_world_rot * cog_pos_).cross(weight_world);
-
-  // new_wrench(0,0) = 0;
-
-  new_wrench(0,0) -= out.vector.x;
-  new_wrench(1,0) -= out.vector.y;
-  new_wrench(2,0) -= out.vector.z;
-
-  RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, 
   "new_wrench after:\n" << new_wrench);
 
-  // transform to world frame
-  Eigen::Matrix<double, 3, 2> new_wrench_base = sensor_world_rot * new_wrench;
-
-  // Transform end-effector weight to world frame
-  // Eigen::Matrix<double, 3, 2> ee_weight;
-  // ee_weight(0,0) = end_effector_weight_[0];
-  // ee_weight(1,0) = end_effector_weight_[1];
-  // ee_weight(2,0) = end_effector_weight_[2];
-  // ee_weight(0,1) = 0;
-  // ee_weight(1,1) = 0;
-  // ee_weight(2,1) = 0;
-
   // Eigen::Matrix<double, 3, 1> weight_world = sensor_world_rot * end_effector_weight_;
-
-  // auto temp = new_wrench_base;
-
-  // RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, 
-  // "end effector weight:\n" << end_effector_weight_);
-
-  // RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, 
-  // "new_wrench_base before:\n" << new_wrench_base);
-
-  // // apply gravity compensation
-  // temp(2,0) -= end_effector_weight_[2];
-
-  // RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, 
-  // "new_wrench_base between:\n" << temp);
-
-  // temp.block<3, 1>(0, 1) -= (cog_world_rot * cog_pos_).cross(end_effector_weight_);
-
-  // RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, 
-  // "new_wrench_base after:\n" << temp);
 
   // RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, 
   // "weight_world:\n" << weight_world);
 
-
-  // RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, 
-  // "new_wrench_base before:\n" << new_wrench_base);
-
   // // apply gravity compensation
-  // new_wrench_base.col(0) -= weight_world;
+  // new_wrench.col(0) -= weight_world;
 
-  // RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, 
-  // "new_wrench_base between:\n" << new_wrench_base);
+  // new_wrench.block<3, 1>(0, 1) -= (cog_world_rot * cog_pos_).cross(weight_world);
 
-  // new_wrench_base.block<3, 1>(0, 1) -= (cog_world_rot * cog_pos_).cross(weight_world);
+  // for (size_t i = 0; i < 3; i++)
+  // {
+  //   new_wrench(i,0) -= bias_[i];
+  // }
+
+  // for (size_t i = 0; i < 3; i++)
+  // {
+  //   new_wrench(i,1) -= bias_[i+3];
+  // }
+  
+
+  new_wrench.block<3, 1>(0, 0) -= bias_.block<3, 1>(0, 0);
+  new_wrench.block<3, 1>(0, 1) -= bias_.block<3, 1>(3, 0);
+
+  // transform to world frame
+  Eigen::Matrix<double, 3, 2> new_wrench_base = sensor_world_rot * new_wrench;
+
+  // apply gravity compensation
+  new_wrench_base.col(0) -= end_effector_weight_;
+
+  new_wrench_base.block<3, 1>(0, 1) -= (cog_world_rot * cog_pos_).cross(end_effector_weight_);
 
   RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, 
   "new_wrench_base after:\n" << new_wrench_base);

@@ -103,6 +103,13 @@ admittance_controller:
         default_value: 0.0,
         description: "Specifies the weight of the end effector, e.g mass * 9.81."
       }
+      bias: {
+        type: double_array,
+        description: "Bias in the force sensor",
+        validation: {
+          fixed_size<>: 6
+        }
+      }
 
   admittance:
     selected_axes:
