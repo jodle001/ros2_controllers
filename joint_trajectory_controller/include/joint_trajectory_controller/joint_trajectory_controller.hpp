@@ -43,6 +43,8 @@
 #include "realtime_tools/realtime_server_goal_handle.h"
 #include "trajectory_msgs/msg/joint_trajectory.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
+#include "optimax_interfaces/srv/set_force_points.hpp"
+#include "std_msgs/msg/float64_multi_array.hpp"
 
 #include "joint_trajectory_controller_parameters.hpp"
 
@@ -170,6 +172,7 @@ protected:
     nullptr;
 
   rclcpp::Service<control_msgs::srv::QueryTrajectoryState>::SharedPtr query_state_srv_;
+  rclcpp::Service<optimax_interfaces::srv::SetForcePoints>::SharedPtr force_points_srv_;
 
   std::shared_ptr<Trajectory> traj_external_point_ptr_ = nullptr;
   realtime_tools::RealtimeBuffer<std::shared_ptr<trajectory_msgs::msg::JointTrajectory>>
@@ -280,6 +283,10 @@ protected:
     const std::shared_ptr<control_msgs::srv::QueryTrajectoryState::Request> request,
     std::shared_ptr<control_msgs::srv::QueryTrajectoryState::Response> response);
 
+  void force_points_service(
+    const std::shared_ptr<optimax_interfaces::srv::SetForcePoints::Request> request,
+    std::shared_ptr<optimax_interfaces::srv::SetForcePoints::Response> response);
+
 private:
   void update_pids();
 
@@ -291,6 +298,8 @@ private:
     trajectory_msgs::msg::JointTrajectoryPoint & point, size_t size);
   void resize_joint_trajectory_point_command(
     trajectory_msgs::msg::JointTrajectoryPoint & point, size_t size);
+
+  std_msgs::msg::Float64MultiArray force_points;
 };
 
 }  // namespace joint_trajectory_controller

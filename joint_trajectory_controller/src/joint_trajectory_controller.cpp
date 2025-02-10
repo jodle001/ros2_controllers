@@ -939,7 +939,19 @@ controller_interface::CallbackReturn JointTrajectoryController::on_configure(
     std::string(get_node()->get_name()) + "/query_state",
     std::bind(&JointTrajectoryController::query_state_service, this, _1, _2));
 
+  force_points_srv_ = get_node()->create_service<optimax_interfaces::srv::SetForcePoints>(
+    std::string(get_node()->get_name()) + "/force_points",
+    std::bind(&JointTrajectoryController::force_points_service, this, _1, _2));
+
   return CallbackReturn::SUCCESS;
+}
+
+void JointTrajectoryController::force_points_service(
+    const std::shared_ptr<optimax_interfaces::srv::SetForcePoints::Request> request,
+    std::shared_ptr<optimax_interfaces::srv::SetForcePoints::Response> response){
+  force_points.data = request->force_setpoints;
+
+  response->success = true;
 }
 
 controller_interface::CallbackReturn JointTrajectoryController::on_activate(
