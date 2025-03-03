@@ -305,9 +305,9 @@ bool AdmittanceRule::calculate_admittance_rule(AdmittanceState & admittance_stat
 
   // RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, "D:\n" << D);
 
-  RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, "mass:\n" << admittance_state_.mass);
-  RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, "stiff:\n" << admittance_state_.stiffness);
-  RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, "damping:\n" << admittance_state_.damping);
+  // RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, "mass:\n" << admittance_state_.mass);
+  // RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, "stiff:\n" << admittance_state_.stiffness);
+  // RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, "damping:\n" << admittance_state_.damping);
 
 
   // Compute Cartesian acceleration based on the admittance control law

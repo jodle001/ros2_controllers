@@ -19,6 +19,7 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
     rsl
     tl_expected
     trajectory_msgs
+    optimax_interfaces
 )
 
 find_package(ament_cmake REQUIRED)

@@ -44,6 +44,12 @@ JointTrajectoryController::JointTrajectoryController()
 {
 }
 
+void JointTrajectoryController::add_force_setpoints(const std::shared_ptr<optimax_interfaces::srv::SetForcePoints::Request> request,
+                              std::shared_ptr<optimax_interfaces::srv::SetForcePoints::Response> response) {
+  force_points_ = request->force_setpoints;
+  response->success = true;
+}
+
 controller_interface::CallbackReturn JointTrajectoryController::on_init()
 {
   try
@@ -54,6 +60,17 @@ controller_interface::CallbackReturn JointTrajectoryController::on_init()
 
     // Set interpolation method from string parameter
     interpolation_method_ = interpolation_methods::from_string(params_.interpolation_method);
+
+    force_node_ = rclcpp::Node::make_shared(std::string(get_node()->get_name()) + "force_node");
+    force_points_service_ = force_node_->create_service<optimax_interfaces::srv::SetForcePoints>(
+      "/joint_trajectory_controller/force_points",
+      std::bind(&JointTrajectoryController::add_force_setpoints,
+                        this,
+                        std::placeholders::_1,
+                        std::placeholders::_2));
+
+    force_thread_ = std::make_shared<std::thread>(std::bind(&JointTrajectoryController::spinNode, this, force_node_));
+
   }
   catch (const std::exception & e)
   {
@@ -112,6 +129,10 @@ JointTrajectoryController::state_interface_configuration() const
     }
   }
   return conf;
+}
+
+bool doubleEquals(double a, double b, double epsilon = 1e-9) {
+  return std::abs(a - b) < epsilon;
 }
 
 controller_interface::return_type JointTrajectoryController::update(
@@ -334,6 +355,36 @@ controller_interface::return_type JointTrajectoryController::update(
 
       if (active_goal)
       {
+        // TODO: auto force_desired = get_force_desired(start_segment_itr, end_segment_itr);
+        // Send force of current segment to parameter server??
+        // 1. Find the index of the start_segment_itr relative to the beginning of the trajectory.
+        const auto idx = std::distance(traj_external_point_ptr_->begin(), start_segment_itr);
+        // 2. Just do a bounds-check for safety
+        double current_force = 0.0;
+        if (idx >= 0 && static_cast<size_t>(idx) < force_points_.size())
+        {
+          current_force = force_points_[idx];
+        } else {
+          RCLCPP_WARN(logger, "Force index out of bounds");
+        }
+
+        if (!doubleEquals(current_force, force_setpoint_)) {
+          force_setpoint_ = current_force;
+          RCLCPP_ERROR_STREAM(logger, "Force setpoint changed to: " << force_setpoint_);
+          // Send new force to admittance controller
+        }
+
+        // // Check if force has changed enough to set parameter in admittance_controller
+        // if (false) { // TODO: force_desired != previous desired
+        //   // auto shared_node = std::make_shared<rclcpp::Node>("parameter_node_thing");
+        //   // auto param_client = std::make_shared<rclcpp::AsyncParametersClient>(shared_node, "admittance_controller");
+        //   //
+        //   // auto result_future = param_client->set_parameters(
+        //   //   {rclcpp::Parameter("admittance.force_setpoint", std::vector<double>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0})}
+        //   //   );
+        //   // TODO: previous_desired = force_desired
+        // }
+
         // send feedback
         auto feedback = std::make_shared<FollowJTrajAction::Feedback>();
         feedback->header.stamp = time;
