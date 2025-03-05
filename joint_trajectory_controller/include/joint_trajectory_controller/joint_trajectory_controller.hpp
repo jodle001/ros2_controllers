@@ -106,9 +106,12 @@ public:
 
   // TODO(jodle) Added stuff for force control
   std::shared_ptr<rclcpp::Node> force_node_;
+  std::shared_ptr<rclcpp::Node> parameters_node_;
   rclcpp::Service<optimax_interfaces::srv::SetForcePoints>::SharedPtr force_points_service_;
   std::vector<double> force_points_;
   std::shared_ptr<std::thread> force_thread_;
+  std::shared_ptr<std::thread> parameters_thread_;
+  std::shared_ptr<rclcpp::AsyncParametersClient> parameters_client_;
   double force_setpoint_ = 0.0;
 
   void add_force_setpoints(const std::shared_ptr<optimax_interfaces::srv::SetForcePoints::Request> request,
@@ -116,6 +119,7 @@ public:
   void get_force_desired(int start_segment_itr, int end_segment_itr);
 
   inline void spinNode(rclcpp::Node::SharedPtr node) { rclcpp::spin(std::move(node)); }
+
 
 protected:
   // To reduce number of variables and to make the code shorter the interfaces are ordered in types

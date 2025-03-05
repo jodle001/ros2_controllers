@@ -192,6 +192,10 @@ protected:
   template <typename T1, typename T2>
   void vec_to_eigen(const std::vector<T1> & data, T2 & matrix);
 
+  inline bool doubleEquals(double a, double b, double epsilon = 1e-9) {
+    return std::abs(a - b) < epsilon;
+  }
+
   // number of robot joint
   size_t num_joints_;
 
@@ -222,6 +226,7 @@ protected:
 
   std::unique_ptr<rclcpp::Node> node_;
   int throttle = 10000;
+  double force_setpoint_;
 };
 
 }  // namespace admittance_controller

@@ -61,16 +61,18 @@ controller_interface::CallbackReturn JointTrajectoryController::on_init()
     // Set interpolation method from string parameter
     interpolation_method_ = interpolation_methods::from_string(params_.interpolation_method);
 
-    force_node_ = rclcpp::Node::make_shared(std::string(get_node()->get_name()) + "force_node");
+    force_node_ = rclcpp::Node::make_shared(std::string(get_node()->get_name()) + "_force_node");
     force_points_service_ = force_node_->create_service<optimax_interfaces::srv::SetForcePoints>(
       "/joint_trajectory_controller/force_points",
       std::bind(&JointTrajectoryController::add_force_setpoints,
                         this,
                         std::placeholders::_1,
                         std::placeholders::_2));
-
     force_thread_ = std::make_shared<std::thread>(std::bind(&JointTrajectoryController::spinNode, this, force_node_));
 
+    parameters_node_ = rclcpp::Node::make_shared(std::string(get_node()->get_name()) + "_parameters_node");
+    parameters_thread_ = std::make_shared<std::thread>(std::bind(&JointTrajectoryController::spinNode, this, parameters_node_));
+    parameters_client_ =  std::make_shared<rclcpp::AsyncParametersClient>(parameters_node_, "admittance_controller");
   }
   catch (const std::exception & e)
   {
@@ -371,7 +373,8 @@ controller_interface::return_type JointTrajectoryController::update(
         if (!doubleEquals(current_force, force_setpoint_)) {
           force_setpoint_ = current_force;
           RCLCPP_ERROR_STREAM(logger, "Force setpoint changed to: " << force_setpoint_);
-          // Send new force to admittance controller
+          auto result_futue = parameters_client_->set_parameters({
+          rclcpp::Parameter("admittance.force_setpoint", std::vector<double>(6, force_setpoint_))});
         }
 
         // // Check if force has changed enough to set parameter in admittance_controller

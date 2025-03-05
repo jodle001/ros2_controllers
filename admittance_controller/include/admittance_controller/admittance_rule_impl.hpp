@@ -145,6 +145,11 @@ void AdmittanceRule::apply_parameters_update()
     // ss << parameters_.admittance.damping_ratio[i];
   }
 
+  if (node_ && !doubleEquals(admittance_state_.force_setpoint[0], force_setpoint_)) {
+    force_setpoint_ = admittance_state_.force_setpoint[0];
+    RCLCPP_ERROR_STREAM(node_->get_logger(), "Force setpoint changed to: " << force_setpoint_);
+  }
+
 }
 
 bool AdmittanceRule::get_all_transforms(
