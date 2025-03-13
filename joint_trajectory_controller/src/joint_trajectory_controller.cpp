@@ -363,30 +363,22 @@ controller_interface::return_type JointTrajectoryController::update(
         const auto idx = std::distance(traj_external_point_ptr_->begin(), start_segment_itr);
         // 2. Just do a bounds-check for safety
         double current_force = 0.0;
-        if (idx >= 0 && static_cast<size_t>(idx) < force_points_.size())
-        {
-          current_force = force_points_[idx];
-        } else {
-          RCLCPP_WARN(logger, "Force index out of bounds");
-        }
 
-        if (!doubleEquals(current_force, force_setpoint_)) {
-          force_setpoint_ = current_force;
-          RCLCPP_ERROR_STREAM(logger, "Force setpoint changed to: " << force_setpoint_);
-          auto result_futue = parameters_client_->set_parameters({
-          rclcpp::Parameter("admittance.force_setpoint", std::vector<double>(6, force_setpoint_))});
-        }
+        if (force_points_.size() > 0) {
+          if (idx >= 0 && static_cast<size_t>(idx) < force_points_.size())
+          {
+            current_force = force_points_[idx];
+          } else {
+            RCLCPP_WARN(logger, "Force index out of bounds");
+          }
 
-        // // Check if force has changed enough to set parameter in admittance_controller
-        // if (false) { // TODO: force_desired != previous desired
-        //   // auto shared_node = std::make_shared<rclcpp::Node>("parameter_node_thing");
-        //   // auto param_client = std::make_shared<rclcpp::AsyncParametersClient>(shared_node, "admittance_controller");
-        //   //
-        //   // auto result_future = param_client->set_parameters(
-        //   //   {rclcpp::Parameter("admittance.force_setpoint", std::vector<double>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0})}
-        //   //   );
-        //   // TODO: previous_desired = force_desired
-        // }
+          if (!doubleEquals(current_force, force_setpoint_)) {
+            force_setpoint_ = current_force;
+            RCLCPP_ERROR_STREAM(logger, "Force setpoint changed to: " << force_setpoint_);
+            auto result_futue = parameters_client_->set_parameters({
+            rclcpp::Parameter("admittance.force_setpoint", std::vector<double>(6, force_setpoint_))});
+          }
+        }
 
         // send feedback
         auto feedback = std::make_shared<FollowJTrajAction::Feedback>();
@@ -1323,6 +1315,7 @@ rclcpp_action::CancelResponse JointTrajectoryController::goal_cancelled_callback
     // Enter hold current position mode
     add_new_trajectory_msg(set_hold_position());
   }
+  force_points_.clear();
   return rclcpp_action::CancelResponse::ACCEPT;
 }
 
