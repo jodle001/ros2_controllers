@@ -138,10 +138,10 @@ void AdmittanceRule::apply_parameters_update()
   for (size_t i = 0; i < NUM_CARTESIAN_DOF; ++i)
   {
     admittance_state_.mass_inv[i] = 1.0 / parameters_.admittance.mass[i];
-    admittance_state_.damping[i] = parameters_.admittance.damping_ratio[i];
+    // admittance_state_.damping[i] = parameters_.admittance.damping_ratio[i];
 
-    // admittance_state_.damping[i] = parameters_.admittance.damping_ratio[i] * 2 *
-    //                                sqrt(admittance_state_.mass[i] * admittance_state_.stiffness[i]);
+    admittance_state_.damping[i] = parameters_.admittance.damping_ratio[i] * 2 *
+                                   sqrt(admittance_state_.mass[i] * admittance_state_.stiffness[i]);
     // ss << parameters_.admittance.damping_ratio[i];
   }
 
@@ -296,11 +296,11 @@ bool AdmittanceRule::calculate_admittance_rule(AdmittanceState & admittance_stat
 
   // Zero out non-selected axes for force setpoint
   admittance_state.force_setpoint = admittance_state.force_setpoint.cwiseProduct(admittance_state.selected_axes);
-  
+
   // Translate the force setpoint into the toolframe
   admittance_state.force_setpoint.block<3, 1>(0,0) = admittance_state.ref_trans_base_ft.rotation() * admittance_state.force_setpoint.block<3, 1>(0,0);
   admittance_state.force_setpoint.block<3, 1>(3,0) = admittance_state.ref_trans_base_ft.rotation() * admittance_state.force_setpoint.block<3, 1>(3,0);
-  
+
   // Subtract force setpoint to adjust the target force
   Eigen::Matrix<double, 6, 1> adjusted_force = F_base + admittance_state.force_setpoint;
 
@@ -358,12 +358,12 @@ void AdmittanceRule::process_wrench_measurements(
   new_wrench(1, 1) = measured_wrench.torque.y;
   new_wrench(2, 1) = measured_wrench.torque.z;
 
-  // RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, 
+  // RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle,
   // "new_wrench after:\n" << new_wrench);
 
   // Eigen::Matrix<double, 3, 1> weight_world = sensor_world_rot * end_effector_weight_;
 
-  // RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, 
+  // RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle,
   // "weight_world:\n" << weight_world);
 
   // // apply gravity compensation
@@ -380,7 +380,7 @@ void AdmittanceRule::process_wrench_measurements(
   // {
   //   new_wrench(i,1) -= bias_[i+3];
   // }
-  
+
 
   new_wrench.block<3, 1>(0, 0) -= bias_.block<3, 1>(0, 0);
   new_wrench.block<3, 1>(0, 1) -= bias_.block<3, 1>(3, 0);
@@ -393,7 +393,7 @@ void AdmittanceRule::process_wrench_measurements(
 
   new_wrench_base.block<3, 1>(0, 1) -= (cog_world_rot * cog_pos_).cross(end_effector_weight_);
 
-  // RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle, 
+  // RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), throttle,
   // "new_wrench_base after:\n" << new_wrench_base);
 
   // apply smoothing filter
