@@ -138,9 +138,10 @@ void AdmittanceRule::apply_parameters_update()
   {
     auto idx = static_cast<Eigen::Index>(i);
     admittance_state_.mass_inv[idx] = 1.0 / parameters_.admittance.mass[i];
-    admittance_state_.damping[idx] =
-      parameters_.admittance.damping_ratio[i] * 2 *
-      sqrt(admittance_state_.mass[idx] * admittance_state_.stiffness[idx]);
+    // admittance_state_.damping[idx] =
+    //   parameters_.admittance.damping_ratio[i] * 2 *
+    //   sqrt(admittance_state_.mass[idx] * admittance_state_.stiffness[idx]);
+    admittance_state_.damping[i] = parameters_.admittance.damping_ratio[i];
   }
 
   if (node_ && !doubleEquals(admittance_state_.force_setpoint[0], force_setpoint_)) {
