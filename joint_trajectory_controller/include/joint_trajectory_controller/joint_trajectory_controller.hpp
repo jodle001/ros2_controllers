@@ -47,6 +47,7 @@
 #include "joint_trajectory_controller_parameters.hpp"
 
 #include "optimax_interfaces/srv/set_force_points.hpp"
+#include "optimax_interfaces/msg/force_setpoint.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 
 
@@ -113,6 +114,7 @@ public:
   std::shared_ptr<std::thread> parameters_thread_;
   std::shared_ptr<rclcpp::AsyncParametersClient> parameters_client_;
   double force_setpoint_ = 0.0;
+  std::shared_ptr<rclcpp::Publisher<optimax_interfaces::msg::ForceSetpoint>> force_points_pub_;
 
   void add_force_setpoints(const std::shared_ptr<optimax_interfaces::srv::SetForcePoints::Request> request,
                             std::shared_ptr<optimax_interfaces::srv::SetForcePoints::Response> response);

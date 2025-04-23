@@ -70,6 +70,8 @@ controller_interface::CallbackReturn JointTrajectoryController::on_init()
                         std::placeholders::_2));
     force_thread_ = std::make_shared<std::thread>(std::bind(&JointTrajectoryController::spinNode, this, force_node_));
 
+    force_points_pub_ = force_node_->create_publisher<optimax_interfaces::msg::ForceSetpoint>("force_setpoints", 10);
+
     parameters_node_ = rclcpp::Node::make_shared(std::string(get_node()->get_name()) + "_parameters_node");
     parameters_thread_ = std::make_shared<std::thread>(std::bind(&JointTrajectoryController::spinNode, this, parameters_node_));
     parameters_client_ =  std::make_shared<rclcpp::AsyncParametersClient>(parameters_node_, "admittance_controller");
@@ -377,6 +379,11 @@ controller_interface::return_type JointTrajectoryController::update(
             RCLCPP_ERROR_STREAM(logger, "Force setpoint changed to: " << force_setpoint_);
             auto result_futue = parameters_client_->set_parameters({
             rclcpp::Parameter("admittance.force_setpoint", std::vector<double>(6, force_setpoint_))});
+            // Publish force setpoint change with timestamp
+            auto msg = optimax_interfaces::msg::ForceSetpoint();
+            msg.time_from_start = state_current_.time_from_start;
+            msg.force_setpoint = force_setpoint_;
+            force_points_pub_->publish(msg);
           }
         }
 
