@@ -146,7 +146,7 @@ void AdmittanceRule::apply_parameters_update()
 
   if (node_ && !doubleEquals(admittance_state_.force_setpoint[0], force_setpoint_)) {
     force_setpoint_ = admittance_state_.force_setpoint[0];
-    RCLCPP_ERROR_STREAM(node_->get_logger(), "Force setpoint changed to: " << force_setpoint_);
+    RCLCPP_INFO_STREAM(node_->get_logger(), "Force setpoint changed to: " << force_setpoint_);
   }
 
 }

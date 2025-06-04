@@ -376,7 +376,7 @@ controller_interface::return_type JointTrajectoryController::update(
 
           if (!doubleEquals(current_force, force_setpoint_)) {
             force_setpoint_ = current_force;
-            RCLCPP_ERROR_STREAM(logger, "Force setpoint changed to: " << force_setpoint_);
+            RCLCPP_INFO_STREAM(logger, "Force setpoint changed to: " << force_setpoint_);
             auto result_futue = parameters_client_->set_parameters({
             rclcpp::Parameter("admittance.force_setpoint", std::vector<double>(6, force_setpoint_))});
             // Publish force setpoint change with timestamp
