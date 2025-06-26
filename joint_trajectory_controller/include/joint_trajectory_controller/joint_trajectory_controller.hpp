@@ -105,11 +105,11 @@ public:
     const rclcpp_lifecycle::State & previous_state) override;
 
   // TODO(jodle) Added stuff for force control
-  std::shared_ptr<rclcpp::Node> force_node_;
+  // std::shared_ptr<rclcpp::Node> force_node_;
   std::shared_ptr<rclcpp::Node> parameters_node_;
   // rclcpp::Service<optimax_interfaces::srv::SetForcePoints>::SharedPtr force_points_service_;
   std::vector<double> force_points_;
-  std::shared_ptr<std::thread> force_thread_;
+  // std::shared_ptr<std::thread> force_thread_;
   std::shared_ptr<std::thread> parameters_thread_;
   std::shared_ptr<rclcpp::AsyncParametersClient> parameters_client_;
   double force_setpoint_ = 0.0;

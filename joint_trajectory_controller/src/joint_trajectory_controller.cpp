@@ -61,14 +61,14 @@ controller_interface::CallbackReturn JointTrajectoryController::on_init()
     // Set interpolation method from string parameter
     interpolation_method_ = interpolation_methods::from_string(params_.interpolation_method);
 
-    force_node_ = rclcpp::Node::make_shared(std::string(get_node()->get_name()) + "_force_node");
+    // force_node_ = rclcpp::Node::make_shared(std::string(get_node()->get_name()) + "_force_node");
     // force_points_service_ = force_node_->create_service<optimax_interfaces::srv::SetForcePoints>(
     //   "/joint_trajectory_controller/force_points",
     //   std::bind(&JointTrajectoryController::add_force_setpoints,
     //                     this,
     //                     std::placeholders::_1,
     //                     std::placeholders::_2));
-    force_thread_ = std::make_shared<std::thread>(std::bind(&JointTrajectoryController::spinNode, this, force_node_));
+    // force_thread_ = std::make_shared<std::thread>(std::bind(&JointTrajectoryController::spinNode, this, force_node_));
 
     parameters_node_ = rclcpp::Node::make_shared(std::string(get_node()->get_name()) + "_parameters_node");
     parameters_thread_ = std::make_shared<std::thread>(std::bind(&JointTrajectoryController::spinNode, this, parameters_node_));
